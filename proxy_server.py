@@ -2,7 +2,14 @@ import socket
 import threading
 import tkinter as tk
 from tkinter import messagebox
-    
+import os
+import tqdm
+
+BUFFER_SIZE = 4096
+file_index="index.html"
+file_css="style.css"
+index_size=os.path.getsize(file_index)
+css_size=os.path.getsize(file_css)
 
 
 def getFile(a):  
@@ -10,6 +17,22 @@ def getFile(a):
     f=open("blacklist.conf","rt")
     for x in f:
         a.append(x)
+
+def sendFile(file_name,file_size):
+    
+    progress = tqdm.tqdm(range(file_size), f"Sending {file_name}", unit="B", unit_scale=True, unit_divisor=1024)
+    with open(file_name, "rb") as f:
+        for _ in progress:
+            # read the bytes from the file
+            bytes_read = f.read(BUFFER_SIZE)
+            if not bytes_read:
+                # file transmitting is done
+                break
+            # we use sendall to assure transimission in 
+            # busy networks
+            conn.sendall(b'''HTTP/1.1 \n\n'''+bytes_read)   
+            # update the progress bar
+            progress.update(len(bytes_read))
 
 
         
@@ -85,102 +108,13 @@ def handle_client(conn,a):
         so.close()
     else:
         print('Blocked')
-        
-
-        
-        conn.sendall(b'''HTTP/1.1 \n\n<html lang="en" dir="ltr">
-                                        <head>
-                                            <meta charset="utf-8">
-                                            <link rel="stylesheet" href="style.css">
-                                        </head>
-                                        <body>
-                                            <div class="wrapper">
-                                            <div class="display">
-                                                <div id="time">
-                                        </div>
-                                        </div>
-                                        <span></span>
-                                            <span></span>
-                                            </div>
-                                        <script>
-                                            setInterval(()=>{
-                                                const time = document.querySelector(".display #time");
-                                            
-                                                time.textContent = "403 Forbiden";
-                                            });
-                                            </script>
-
-                                        </body>
-                                        </html>''') 
-        conn.sendall(b'''HTTP/1.1 \n\n*{
-    margin: 0;
-    padding: 0;
-    font-family: 'Poppins', sans-serif;
-  }
-  html,body{
-    display: grid;
-    height: 100%;
-    place-items: center;
-    background: #000;
-  }
-  .wrapper{
-    height: 100px;
-    width: 360px;
-    position: relative;
-    background: linear-gradient(135deg, #14ffe9, #ffeb3b, #ff00e0);
-    border-radius: 10px;
-    cursor: default;
-    animation: animate 1.5s linear infinite;
-  }
-  .wrapper .display,
-  .wrapper span{
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-  .wrapper .display{
-    z-index: 999;
-    height: 85px;
-    width: 345px;
-    background: #1b1b1b;
-    border-radius: 6px;
-    text-align: center;
-  }
-  .display #time{
-    line-height: 85px;
-    color: #fff;
-    font-size: 50px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    background: linear-gradient(135deg, #14ffe9, #ffeb3b, #ff00e0);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: animate 1.5s linear infinite;
-  }
-  @keyframes animate {
-    100%{
-      filter: hue-rotate(360deg);
-    }
-  }
-  .wrapper span{
-    height: 100%;
-    width: 100%;
-    border-radius: 10px;
-    background: inherit;
-  }
-  .wrapper span:first-child{
-    filter: blur(7px);
-  }
-  .wrapper span:last-child{
-    filter: blur(20px);
-  }
-  ''')                                                
+        sendFile(file_index,index_size)
+        sendFile(file_css,css_size)                                              
         
     conn.close()
 
 
-HOST="10.0.156.119"
+HOST="192.168.30.174"
 PORT=8888
 s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((HOST,PORT))
