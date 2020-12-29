@@ -1,4 +1,5 @@
 import socket
+import os
 import threading
 import tkinter as tk
 from tkinter import messagebox
@@ -119,7 +120,7 @@ PORT=8888
 s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((HOST,PORT))
 s.listen(1000)
-
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 a=[]
 getFile(a)  
 
